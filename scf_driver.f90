@@ -13,7 +13,7 @@ contains
     type(SCFData)           :: SCF
     type(DIISData)          :: DIIS
     integer                 :: lwork,liwork,info,iter
-    integer                 :: i
+    integer                 :: i,j,k,l,ij
     integer, allocatable    :: iwork(:)
     real(prec), allocatable :: matH(:,:),matC(:,:),matD(:,:),matF(:,:),matP(:,:)
     real(prec), allocatable :: twoel(:,:,:,:),moint(:,:,:,:),eval(:),work(:)
@@ -65,14 +65,37 @@ contains
     ! write(*,*) "*** End of SCF iterations                             ***"
     call free_DIIS(DIIS)
 
-    allocate(SCF%eval(System%nbas),SCF%evec(System%nbas,System%nbas))
+    allocate(SCF%eval(System%nbas),SCF%evec(System%nbas,System%nbas),&
+         SCF%pair_energy(System%nbas,System%nbas,System%nbas*(System%nbas+1)/2))
     SCF%eval(:)   = eval
     SCF%evec(:,:) = matC
     SCF%ener      = ener
-    write(*,*) "*** SCF Energy                                        ***"
-    write(*,*) SCF%ener
 
     call four_index_transform(System,SCF,twoel,moint)
+    do l = 1, System%nocc
+       do k = 1, System%nocc
+          do j = 1, System%nocc
+             do i = 1, j
+                ij = j*(j-1)/2+i
+                SCF%pair_energy(k,l,ij) = moint(k,i,l,j)
+             end do
+          end do
+       end do
+    end do
+    ener = 0._prec
+    do i = 1, System%nocc
+       ener = ener + 2._prec*(SCF%eval(i) - 0.5_prec*SCF%pair_energy(i,i,i*(i+1)/2))
+    end do
+    do j = 1, System%nocc
+       do i = 1, j-1
+          ener = ener - 2._prec*(2._prec*SCF%pair_energy(i,j,i+(j-1)*j/2)-SCF%pair_energy(j,i,i+(j-1)*j/2))
+       end do
+    end do
+    write(*,*) "---------------------------------------------------------"
+    write(*,*) "| SCF Energy:                                           |"
+    write(*,*) "---------------------------------------------------------"
+    write(*,*) "regular     = ",SCF%ener
+    write(*,*) "pair energy = ",ener
 
     call mp2(System,SCF,moint)
 
@@ -83,8 +106,33 @@ contains
     type(SystemData)        :: System
     type(SCFData)           :: SCF
     real(prec)              :: moint(:,:,:,:)
-    real(prec)              :: emp2
+    real(prec), allocatable :: mp2_pair_energy(:,:)
+    real(prec)              :: emp2,temp
     integer                 :: a,b,i,j
+
+    allocate(mp2_pair_energy(System%nocc,System%nocc))
+
+    do j = 1, System%nocc
+       do i = 1, System%nocc
+          temp = 0._prec
+          do b = System%nocc+1, System%nbas
+             do a = System%nocc+1, System%nbas
+                if (j.GT.i) then
+                   temp = temp + (moint(a,i,b,j)-moint(b,i,a,j))**2/(SCF%eval(i)+SCF%eval(j)-SCF%eval(a)-SCF%eval(b))
+                else
+                   temp = temp + (moint(a,i,b,j)+moint(b,i,a,j))**2/(SCF%eval(i)+SCF%eval(j)-SCF%eval(a)-SCF%eval(b))
+                end if
+             end do
+          end do
+          if (j.GT.i) then
+             mp2_pair_energy(i,j) = 1.5_prec*temp
+          else if (i.GT.j) then
+             mp2_pair_energy(i,j) = 0.5_prec*temp
+          else
+             mp2_pair_energy(i,j) = 0.25_prec*temp
+          end if
+       end do
+    end do
     emp2 = 0._prec
     do a = System%nocc+1, System%nbas
        do b = System%nocc+1, System%nbas
@@ -96,8 +144,27 @@ contains
           end do
        end do
     end do
-    write(*,*) "*** MP2 Energy,                MP2+SCF                ***"
-    print*, "  ",emp2,emp2+SCF%ener
+    write(*,*) "---------------------------------------------------------"
+    write(*,*) "| MP2 Energy, pair energy,   MP2+SCF                    |"
+    write(*,*) "---------------------------------------------------------"
+    write(*,*), "  ",emp2
+    write(*,*), "  ",sum(mp2_pair_energy),emp2+SCF%ener
+    write(*,*) "---------------------------------------------------------"
+    write(*,*) "| Singlet pairs                                         |"
+    write(*,*) "---------------------------------------------------------"
+    do j = 1, System%nocc
+       do i = 1, j
+          write(*,*) i,j,mp2_pair_energy(j,i)
+       end do
+    end do
+    write(*,*) "---------------------------------------------------------"
+    write(*,*) "| Triplet pairs                                         |"
+    write(*,*) "---------------------------------------------------------"
+    do j = 2, System%nocc
+       do i = 1, j-1
+          write(*,*) i,j,mp2_pair_energy(i,j)
+       end do
+    end do
   end subroutine mp2
 
   subroutine four_index_transform(System,SCF,twoel,moint)

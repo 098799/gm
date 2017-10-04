@@ -12,5 +12,6 @@ module commontypes
      real(prec), allocatable :: eval(:)
      real(prec), allocatable :: evec(:,:)
      real(prec)              :: ener
+     real(prec), allocatable :: pair_energy(:,:,:)
   end type SCFData
 end module commontypes
