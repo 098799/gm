@@ -9,9 +9,9 @@ contains
     implicit none
     type(SystemData) :: System
     integer          :: i,j
-    i=-1
-    j=-1
-    print*, System%nprim
+    ! i=-1
+    ! j=-1
+    ! print*, System%nprim
     ! do while (next_pair(i,j,System%nprim))
     !    print*, i,j
     ! end do

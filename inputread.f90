@@ -11,9 +11,15 @@ contains
     open(10,file="input.in",status="old")
     read(10,*) System%g
     read(10,*) System%nbas
-    read(10,*) System%norb
+    read(10,*) System%nocc
     read(10,*) System%nprim
     read(10,*) System%alpha
     close(10)
+    write(*,*) "*** Some input reading has happened                   ***"
+    write(*,*) "g=    ",System%g
+    write(*,*) "nbas= ",System%nbas
+    write(*,*) "nocc= ",System%nocc
+    write(*,*) "nprim=",System%nprim
+    write(*,*) "alpha=",System%alpha
   end subroutine read_Input
 end module inputread

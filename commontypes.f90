@@ -4,8 +4,13 @@ module commontypes
   type SystemData
      real(prec) :: g
      integer    :: nbas
-     integer    :: norb
+     integer    :: nocc
      integer    :: nprim
      real(prec) :: alpha
   end type SystemData
+  type SCFData
+     real(prec), allocatable :: eval(:)
+     real(prec), allocatable :: evec(:,:)
+     real(prec)              :: ener
+  end type SCFData
 end module commontypes
