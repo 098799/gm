@@ -18,8 +18,8 @@ inputread.o   : precision.o commontypes.o
 diis.o        : precision.o commontypes.o
 integrals.o   : precision.o commontypes.o
 scf_driver.o  : precision.o commontypes.o diis.o integrals.o
-f12.o         : precision.o commontypes.o
-main.o        : precision.o commontypes.o inputread.o diis.o scf_driver.o f12.o
+f12.o         : precision.o commontypes.o integrals.o
+main.o        : precision.o commontypes.o inputread.o scf_driver.o f12.o
 
 clean:
 	rm *.o *.mod $(NAME)

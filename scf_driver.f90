@@ -165,6 +165,8 @@ contains
           write(*,*) i,j,mp2_pair_energy(i,j)
        end do
     end do
+    write(*,*) ""
+    write(*,*) ""
   end subroutine mp2
 
   subroutine four_index_transform(System,SCF,twoel,moint)
@@ -193,7 +195,8 @@ contains
                1._prec,tmp1,System%nbas,SCF%evec,System%nbas,0._prec,moint(:,:,k,l),System%nbas)
        enddo
     enddo
-
+    
+    !!! OLDSHIT
     ! block
     !   integer :: i,j,k,l,a,b,c,d
     !   real(prec),allocatable :: in1(:,:,:,:)
